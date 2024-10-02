@@ -56,19 +56,42 @@ function Create(props) {
     <div>
       <article>
         <h2> Create </h2> form handling
+        <form onSubmit={event => {
+          event.preventDefault();
+          const title = event.target.title.value;
+          const body = event.target.body.value;
+          props.onCreate(title, body);
+        }}>
+          <p><input type='text' name='title' placeholder='title....'></input></p>
+          <p><textarea name='body' cols='50' rows='8' placeholder='body...'></textarea></p>
+          <p><input type='submit' value='create'></input></p>
+        </form>
       </article>
+    </div>
+  );
+}
+
+//MARK: Update
+function Update(props) {
+  const [dispTitle, setDispTitle] = useState(props.orgTitle);
+  const [dispBody, setDispBody] = useState(props.orgBody);
+
+  return (
+    <article>
+      <h2> Update.. </h2>
       <form onSubmit={event => {
         event.preventDefault();
-        const title = event.target.title.value;
-        const body = event.target.body.value;
-        alert(title + 'submit' + body);
-        props.onCreate(title, body);
+        props.onUpdate(dispTitle, dispBody);
       }}>
-        <p><input type='text' name='title' placeholder='title....'></input></p>
-        <p><textarea name='body' cols='50' rows='8' placeholder='body...'></textarea></p>
-        <p><input type='submit' value='create'></input></p>
+        <p><input type='text' name='title' value={dispTitle} onChange={event => {
+          setDispTitle(event.target.value);
+        }}></input></p>
+        <p><textarea name='body' cols='50' rows='8' value={dispBody} onChange={event => {
+          setDispBody(event.target.value);
+        }}></textarea></p>
+        <p><input type='submit' value='update'></input></p>
       </form>
-    </div>
+    </article>
   );
 }
 
@@ -76,31 +99,78 @@ function Create(props) {
 function App() {
   const [displayMode, setDisplayMode] = useState('WELCOME');
   const [id, setId] = useState(null);
-  const topics = [
+  const [topics, setTopics] = useState([
     { id: 1, title: 'html', body: 'html is...' },
     { id: 2, title: 'css', body: 'css is...' },
     { id: 3, title: 'javascript', body: 'javascript is...' }
-  ];
+  ]);
+  const [nextId, setNextId] = useState(4);
 
 
   let content = null;
+  let contentController = null;
+
+  let orgTitle, orgBody = null;
+  for (let i = 0; i < topics.length; i++) {
+    if (id === topics[i].id) {
+      orgTitle = topics[i].title;
+      orgBody = topics[i].body;
+    }
+  }
 
   if (displayMode === 'WELCOME') {
     content = <MyArticle title='React' body='React is...'></MyArticle>
   } else if (displayMode === 'READ') {
-    let title, body = null;
+    content = <MyArticle title={orgTitle} body={orgBody}></MyArticle>
 
-    for (let i = 0; i < topics.length; i++) {
-      if (id === topics[i].id) {
-        title = topics[i].title;
-        body = topics[i].body;
-      }
-    }
-    content = <MyArticle title={title} body={body}></MyArticle>
+    contentController = <div>
+      <p>
+        <a href={'/update/' + id} onClick={event => {
+          event.preventDefault();
+          setDisplayMode('UPDATE');
+        }}> Update </a>
+      </p>
+
+      <p>
+        <a href={'/delete/' + id} onClick={event => {
+          event.preventDefault();
+          const newTopics = [];
+
+          for (let i = 0; i < topics.length; i++) {
+            if (id !== topics[i].id) {
+              newTopics.push(topics[i]);
+            }
+          }
+          setTopics(newTopics);
+          setDisplayMode('WELCOME');
+        }}> Delete </a>
+      </p>
+    </div>
   } else if (displayMode === 'CREATE') {
-    content = <Create onCreate={(title, body) => {
+    content = <Create onCreate={(_title, _body) => {
+      const newTopics = [...topics];
+      const newTopic = { id: nextId, title: _title, body: _body };
 
+      newTopics.push(newTopic);
+
+      setTopics(newTopics);
+      setNextId(nextId + 1);
     }}></Create>
+  } else if (displayMode === 'UPDATE') {
+    content = <Update orgTitle={orgTitle} orgBody={orgBody} onUpdate={(_title, _body) => {
+      const newTopic = { id: id, title: _title, body: _body };
+      const newTopics = [];
+
+      for (let i = 0; i < topics.length; i++) {
+        if (id === topics[i].id) {
+          newTopics.push(newTopic);
+        } else {
+          newTopics.push(topics[i]);
+        }
+      }
+      setTopics(newTopics);
+      setDisplayMode('WELCOME');
+    }}></Update>
   }
 
   return (
@@ -120,10 +190,11 @@ function App() {
 
       {content}
 
-      <a href='/create' onClick={event => {
+      <p><a href='/create' onClick={event => {
         event.preventDefault();
         setDisplayMode('CREATE');
-      }}>CREATE</a>
+      }}>CREATE</a></p>
+      {contentController}
     </div>
   );
 }
