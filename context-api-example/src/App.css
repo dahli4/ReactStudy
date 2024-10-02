@@ -1,0 +1,7 @@
+.root,
+.root div {
+  border: 5px solid gray;
+  margin: 5px;
+  padding: 5px;
+  text-align: center;
+}
